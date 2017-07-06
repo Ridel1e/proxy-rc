@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+</head>
+<body>
+  <script src="proxy-rest-client.js"></script>
+  <script>
+    const rcb = createRCBuilder();
+
+    const rc = rcBuilder
+      .baseUrl('http://test.ru')
+      .suffix('json')
+      .on('request', (req) => { req.headers['auth'] = 'token' })
+      .build();
+
+    const users = rc.users();
+    
+    users.get().then((res) => {/* handle res */})
+
+    const user = rc.users(1);
+    const userProj = user.projects();
+
+    userProj.post({ /* new proj */ }).then((res) => { /* handle res */ })
+
+  </script>
+</body>
+</html>

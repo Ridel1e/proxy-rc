@@ -1,17 +1,9 @@
 import xr from 'xr';
 
 /*
- * Default config object
- */
-const defaultConf = {
-  baseUrl: '',
-  suffix: null,
-};
-
-/*
  * HTTP method constants. 
  */
-const METHODS = {
+const methods = {
   DELETE: xr.Methods.DELETE,
   GET: xr.Methods.GET,
   PATCH: xr.Methods.PATCH,
@@ -24,7 +16,7 @@ const METHODS = {
  * @param {*} conf 
  */
 const  createRC = (conf) => {
-  const currentConf = Object.assign({}, defaultConf, conf);
+  const currentConf = conf;
 
   class Resource {
 
@@ -85,7 +77,7 @@ const  createRC = (conf) => {
 
     _mapResObj (res) {
       return {
-        data: res.response || null,
+        data: JSON.parse(res.response) || null,
         status: res.status,
         statusText: res.xhr.statusText
       }

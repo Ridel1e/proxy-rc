@@ -25,5 +25,10 @@
     "babel-loader": "^7.1.1",
     "babel-preset-es2015": "^6.24.1",
     "webpack": "^3.0.0"
+  },
+  "dependencies": {
+    "express": "^4.15.3",
+    "ramda": "^0.24.1",
+    "xr": "^0.3.0"
   }
 }
