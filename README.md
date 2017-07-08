@@ -32,8 +32,6 @@ if you use es5 syntax
 
 ## Usage
 
-## Usage
-
 1. create rest client builder:
 
 ``` js
