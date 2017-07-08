@@ -34,13 +34,13 @@ if you use es5 syntax
 
 1. create rest client builder:
 
-``` js
+```javascript
  const rcBuilder = createRCBuilder();
 ``` 
 
 2. set config to your builder and "build" rest client:
 
-``` js
+```javascript
 const rc = rcBuilder.baseUrl('www.test.com')
                     .suffix('json')
                     .on('request', (req) => req.headers.auth = 'yourToken')
@@ -49,7 +49,7 @@ const rc = rcBuilder.baseUrl('www.test.com')
 
 3. user rest client for requesting :)
 
-``` js
+```javascript
     /* GET request to www.test.com/users */
     rc.users().get().then((res) => /* your res handler */)
     
