@@ -571,10 +571,10 @@ var methods = {
               });
 
               if (res.status == 200 || res.status == 201 || res.status === 204 || res.status === 304) {
-                resolve(_helpers.pipe.apply(null, currentConf.handlers.success)(res));
+                resolve(_helpers.pipe.apply(null, curReqConf.handlers.success)(res));
               }
 
-              reject(_helpers.pipe.apply(null, currentConf.handlers.error)(res));
+              reject(_helpers.pipe.apply(null, curReqConf.handlers.error)(res));
             }
           };
         });

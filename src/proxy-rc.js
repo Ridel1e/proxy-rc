@@ -146,10 +146,10 @@ const  createRC = (conf) => {
               })
 
             if(res.status == 200 || res.status == 201 || res.status === 204 || res.status === 304) {
-              resolve(pipe.apply(null, currentConf.handlers.success)(res))
+              resolve(pipe.apply(null, curReqConf.handlers.success)(res))
             }
 
-            reject(pipe.apply(null, currentConf.handlers.error)(res));
+            reject(pipe.apply(null, curReqConf.handlers.error)(res));
           }
         }
       })
