@@ -225,6 +225,27 @@ var RCBuilder = function () {
 
       return this;
     }
+
+    /**
+     * 
+     * @param {*} trailing 
+     */
+
+  }, {
+    key: 'trailing',
+    value: function trailing(_trailing) {
+      if (_trailing === undefined) {
+        return this._conf.trailing;
+      }
+
+      if (!(0, _helpers.isString)(_trailing)) {
+        throw new Error('trailing must be a String');
+      }
+
+      this._conf.trailing = _trailing;
+
+      return this;
+    }
   }, {
     key: 'on',
     value: function on(event, handler) {
@@ -247,6 +268,7 @@ var RCBuilder = function () {
         baseUrl: '',
         suffix: null,
         contentType: 'application/json',
+        trailing: '',
         mimes: {
           'application/json': { encode: JSON.stringify, decode: JSON.parse },
           'application/xml': {/* in progress */}
@@ -321,6 +343,18 @@ var isEmptyArray = function isEmptyArray(arr) {
   return arr.length === 0;
 };
 
+var pipe = function pipe() {
+  for (var _len = arguments.length, fns = Array(_len), _key = 0; _key < _len; _key++) {
+    fns[_key] = arguments[_key];
+  }
+
+  return function (x) {
+    return fns.reduce(function (acc, fn) {
+      return fn(acc);
+    }, x);
+  };
+};
+
 var isEmpty = function isEmpty(val) {
   if (isArray(val)) {
     return isEmptyArray(val);
@@ -342,6 +376,7 @@ exports.isFunction = isFunction;
 exports.isString = isString;
 exports.isSymbol = isSymbol;
 exports.isEmpty = isEmpty;
+exports.pipe = pipe;
 
 /***/ }),
 /* 2 */
@@ -363,7 +398,11 @@ var _xr = __webpack_require__(3);
 
 var _xr2 = _interopRequireDefault(_xr);
 
+var _helpers = __webpack_require__(1);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -463,14 +502,93 @@ var methods = {
           statusText: res.xhr.statusText
         };
       }
+
+      /**
+       * 
+       * @param {*} reqConf 
+       */
+
+    }, {
+      key: '_createReqObj',
+      value: function _createReqObj(reqConf) {
+        return {
+          headers: Object.assign({}, {
+            'Content-Type': currentConf.contentType
+          }, reqConf.headers),
+
+          handlers: {
+            request: [].concat(_toConsumableArray(currentConf.interceptors.request)),
+            response: [].concat(_toConsumableArray(currentConf.interceptors.response)),
+            success: [].concat(_toConsumableArray(currentConf.interceptors.success)),
+            error: [].concat(_toConsumableArray(currentConf.interceptors.error))
+          },
+
+          processHandlers: {
+            /* in progress */
+          },
+
+          method: reqConf.method,
+          url: this.url(),
+          params: reqConf.params,
+          data: reqConf.data
+        };
+      }
     }, {
       key: '_request',
-      value: function _request(reqConf) {
+      value: function _request(userReqConf) {
+        var _this = this;
 
-        return (0, _xr2.default)({
-          url: this.url(),
-          method: reqConf.method
-        }).then(this._mapResObj);
+        var curReqConf = this._createReqObj(userReqConf);
+        curReqConf = _helpers.pipe.apply(null, curReqConf.handlers.request)(curReqConf);
+
+        /* generateUrl func */
+        var generateUrl = function generateUrl() {
+          return _this.url() + currentConf.trailing + '?' + _this._encodeParams(curReqConf.params);
+        };
+
+        var xhr = new XMLHttpRequest();
+        xhr.open(curReqConf.method, generateUrl(), true);
+        /* headers */
+        Object.keys(curReqConf.headers).forEach(function (header) {
+          return xhr.setRequestHeader(header, curReqConf.headers[header]);
+        });
+
+        var mimes = currentConf.mimes[curReqConf.headers['Content-Type']];
+
+        if (!mimes) {
+          throw new Error('mimes for this content-type doesn\'t exists');
+        }
+
+        xhr.send(mimes.encode(curReqConf.data));
+
+        return new Promise(function (resolve, reject) {
+          xhr.onreadystatechange = function () {
+            if (xhr.readyState == 4) {
+              var res = _helpers.pipe.apply(null, curReqConf.handlers.response)({
+                status: xhr.status,
+                statusText: xhr.statusText,
+                data: xhr.responseText ? mimes.decode(xhr.responseText) : null
+              });
+
+              if (res.status == 200 || res.status == 201 || res.status === 204 || res.status === 304) {
+                resolve(_helpers.pipe.apply(null, currentConf.handlers.success)(res));
+              }
+
+              reject(_helpers.pipe.apply(null, currentConf.handlers.error)(res));
+            }
+          };
+        });
+      }
+    }, {
+      key: '_encodeParams',
+      value: function _encodeParams() {
+        var params = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+        var encodedParams = Object.keys(params).reduce(function (acc, param) {
+          return acc + encodeURIComponent(param) + '=' + encodeURIComponent(params[param]) + '&';
+        }, '');
+
+        return encodedParams.slice(0, encodedParams.length - 1);
       }
     }], [{
       key: 'clone',

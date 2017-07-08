@@ -1,5 +1,5 @@
 import xr from 'xr';
-
+import {pipe} from './helpers';
 /*
  * HTTP method constants. 
  */
@@ -83,12 +83,88 @@ const  createRC = (conf) => {
       }
     }
 
-    _request (reqConf) {
+    /**
+     * 
+     * @param {*} reqConf 
+     */
+    _createReqObj (reqConf) {
+      return {
+        headers: Object.assign({}, {
+          'Content-Type': currentConf.contentType
+        }, reqConf.headers),
 
-      return xr({
+        handlers: {
+          request: [...currentConf.interceptors.request],
+          response: [...currentConf.interceptors.response],
+          success: [...currentConf.interceptors.success],
+          error: [...currentConf.interceptors.error]
+        },
+
+        processHandlers: {
+          /* in progress */
+        },
+
+        method: reqConf.method,
         url: this.url(),
-        method: reqConf.method        
-      }).then(this._mapResObj);
+        params: reqConf.params,
+        data: reqConf.data
+      }
+    }
+
+    _request (userReqConf) {
+      let curReqConf = this._createReqObj(userReqConf);
+      curReqConf = 
+        pipe.apply(null, curReqConf.handlers.request)(curReqConf);
+      
+      /* generateUrl func */
+      const generateUrl = () => this.url() +
+                                currentConf.trailing + '?' +
+                                this._encodeParams(curReqConf.params);
+
+      const xhr = new XMLHttpRequest();
+      xhr.open(curReqConf.method, generateUrl(), true);
+      /* headers */
+      Object.keys(curReqConf.headers).forEach((header) => 
+          xhr.setRequestHeader(header, curReqConf.headers[header]));
+
+      const mimes = currentConf.mimes[curReqConf.headers['Content-Type']];
+      
+      if(!mimes) {
+        throw new Error('mimes for this content-type doesn\'t exists')
+      }
+
+      xhr.send(mimes.encode(curReqConf.data));
+
+      return new Promise((resolve, reject) => {
+        xhr.onreadystatechange = () => {
+          if(xhr.readyState == 4) {
+            const res = pipe
+              .apply(null, curReqConf.handlers.response)({
+                status: xhr.status,
+                statusText: xhr.statusText,
+                data: xhr.responseText ? mimes.decode(xhr.responseText) : null
+              })
+
+            if(res.status == 200 || res.status == 201 || res.status === 204 || res.status === 304) {
+              resolve(pipe.apply(null, currentConf.handlers.success)(res))
+            }
+
+            reject(pipe.apply(null, currentConf.handlers.error)(res));
+          }
+        }
+      })
+    }
+
+    _encodeParams (params = {}) {
+      const encodedParams = Object
+        .keys(params)
+        .reduce((acc, param) => {
+          return acc + encodeURIComponent(param) + 
+                 '=' + encodeURIComponent(params[param]) + 
+                 '&';
+        }, '');
+
+      return encodedParams.slice(0, encodedParams.length - 1);
     }
 
     static get _proxyHandler () {

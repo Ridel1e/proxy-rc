@@ -114,6 +114,22 @@ class RCBuilder {
     return this;
   }
 
+  /**
+   * 
+   * @param {*} trailing 
+   */
+  trailing (trailing) {
+    if(trailing === undefined) { return this._conf.trailing; }
+
+    if(!isString(trailing)) {
+      throw new Error('trailing must be a String');
+    }
+
+    this._conf.trailing = trailing;
+
+    return this;
+  }
+
   on (event, handler) {
     if(!isString(event)) { 
       throw new Error('event must be a String');
@@ -133,6 +149,7 @@ class RCBuilder {
       baseUrl: '',
       suffix: null,
       contentType: 'application/json',
+      trailing: '',
       mimes: {
         'application/json': { encode: JSON.stringify, decode: JSON.parse },
         'application/xml': { /* in progress */ }

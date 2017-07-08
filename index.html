@@ -9,23 +9,15 @@
 <body>
   <script src="proxy-rest-client.js"></script>
   <script>
-    const rcb = createRCBuilder();
+    const rcBuilder = createRCBuilder();
 
     const rc = rcBuilder
-      .baseUrl('http://test.ru')
-      .suffix('json')
-      .on('request', (req) => { req.headers['auth'] = 'token' })
+      .baseUrl('https://httpbin.org/post')
+      .on('request', (req) => { req.headers.auth = '1234'; return req; })
+      .on('response', (res) => { console.log(res.data); return res; })
       .build();
 
-    const users = rc.users();
-    
-    users.get().then((res) => {/* handle res */})
-
-    const user = rc.users(1);
-    const userProj = user.projects();
-
-    userProj.post({ /* new proj */ }).then((res) => { /* handle res */ })
-
+      rc.post({ name: 'Ruslan' });
   </script>
 </body>
 </html>

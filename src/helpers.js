@@ -18,6 +18,8 @@ const isEmptyObj = (obj) => Object.keys(obj).length === 0;
 
 const isEmptyArray = (arr) => arr.length === 0;
 
+const pipe = (...fns) => x => fns.reduce((acc, fn) => fn(acc), x);
+
 const isEmpty = (val) => {
   if (isArray(val)) { return isEmptyArray(val); }
 
@@ -35,5 +37,6 @@ export {
   isFunction,
   isString,
   isSymbol,
-  isEmpty
+  isEmpty,
+  pipe
 }
