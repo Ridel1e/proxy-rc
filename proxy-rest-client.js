@@ -402,8 +402,6 @@ var _helpers = __webpack_require__(1);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
-
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 /*
@@ -517,10 +515,13 @@ var methods = {
           }, reqConf.headers),
 
           handlers: {
-            request: [].concat(_toConsumableArray(currentConf.interceptors.request)),
-            response: [].concat(_toConsumableArray(currentConf.interceptors.response)),
-            success: [].concat(_toConsumableArray(currentConf.interceptors.success)),
-            error: [].concat(_toConsumableArray(currentConf.interceptors.error))
+            request: currentConf.interceptors.request.concat(reqConf.handlers.request || []),
+
+            response: currentConf.interceptors.response.concat(reqConf.handlers.response || []),
+
+            success: currentConf.interceptors.success.concat(reqConf.handlers.success || []),
+
+            error: currentConf.interceptors.error.concat(reqConf.handlers.error || [])
           },
 
           processHandlers: {
@@ -551,7 +552,7 @@ var methods = {
         var _this = this;
 
         var curReqConf = this._createReqObj(userReqConf);
-
+        console.log(curReqConf);
         curReqConf = _helpers.pipe.apply(null, curReqConf.handlers.request)(curReqConf);
 
         var xhr = new XMLHttpRequest();
@@ -581,9 +582,9 @@ var methods = {
 
               if (_this._isRequestSuccessful(res.status)) {
                 resolve(_helpers.pipe.apply(null, curReqConf.handlers.success)(res));
+              } else {
+                reject(_helpers.pipe.apply(null, curReqConf.handlers.error)(res));
               }
-
-              reject(_helpers.pipe.apply(null, curReqConf.handlers.error)(res));
             }
           };
         });

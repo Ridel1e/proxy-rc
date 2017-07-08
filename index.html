@@ -12,12 +12,15 @@
     const rcBuilder = createRCBuilder();
 
     const rc = rcBuilder
-      .baseUrl('https://httpbin.org/post')
-      .on('request', (req) => { req.headers.auth = '1234'; return req; })
-      .on('response', (res) => { console.log(res.data); return res; })
+      .baseUrl('https://httpbin.org/pos')
+      .on('request', (req) => { req.headers.auth = '1234'; console.log(req); return req; })
+      .on('response', (res) => { console.log(res); return res; })
+      .on('success',  (res) => { console.log('success'); return res; })
       .build();
 
-      rc.post({ name: 'Ruslan' });
+      rc.post({ name: 'Ruslan' }, {
+        handlers: { error: (res) => {console.log(res); return res;}}
+      });
   </script>
 </body>
 </html>

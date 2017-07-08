@@ -92,12 +92,19 @@ const  createRC = (conf) => {
         headers: Object.assign({}, {
           'Content-Type': currentConf.contentType
         }, reqConf.headers),
-
+        
         handlers: {
-          request: [...currentConf.interceptors.request],
-          response: [...currentConf.interceptors.response],
-          success: [...currentConf.interceptors.success],
-          error: [...currentConf.interceptors.error]
+          request: currentConf.interceptors.request
+            .concat(reqConf.handlers.request || []),
+
+          response: currentConf.interceptors.response
+            .concat(reqConf.handlers.response || []),
+
+          success: currentConf.interceptors.success
+            .concat(reqConf.handlers.success || []),
+
+          error: currentConf.interceptors.error
+            .concat(reqConf.handlers.error || [])
         },
 
         processHandlers: {
@@ -127,7 +134,7 @@ const  createRC = (conf) => {
 
     _request (userReqConf) {
       let curReqConf = this._createReqObj(userReqConf);
-
+      console.log(curReqConf)
       curReqConf = pipe.apply(null, curReqConf.handlers.request)(curReqConf);
 
       const xhr = new XMLHttpRequest();
@@ -153,12 +160,13 @@ const  createRC = (conf) => {
               statusText: xhr.statusText,
               data: xhr.responseText ? mimes.decode(xhr.responseText) : null
             });
-
+            
             if(this._isRequestSuccessful(res.status)) {
               resolve(pipe.apply(null, curReqConf.handlers.success)(res))
+            } 
+            else {
+              reject(pipe.apply(null, curReqConf.handlers.error)(res));
             }
-
-            reject(pipe.apply(null, curReqConf.handlers.error)(res));
           }
         }
       })
