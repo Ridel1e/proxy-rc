@@ -402,6 +402,8 @@ var _helpers = __webpack_require__(1);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 /*
@@ -509,19 +511,21 @@ var methods = {
     }, {
       key: '_createReqObj',
       value: function _createReqObj(reqConf) {
+        var handlers = Object.assign({}, Resource._noopHandlers, reqConf.handlers);
+
         return {
           headers: Object.assign({}, {
             'Content-Type': currentConf.contentType
           }, reqConf.headers),
 
           handlers: {
-            request: currentConf.interceptors.request.concat(reqConf.handlers.request || []),
+            request: [].concat(_toConsumableArray(currentConf.interceptors.request), _toConsumableArray(handlers.request)),
 
-            response: currentConf.interceptors.response.concat(reqConf.handlers.response || []),
+            response: [].concat(_toConsumableArray(currentConf.interceptors.response), _toConsumableArray(handlers.response)),
 
-            success: currentConf.interceptors.success.concat(reqConf.handlers.success || []),
+            success: [].concat(_toConsumableArray(currentConf.interceptors.success), _toConsumableArray(handlers.success)),
 
-            error: currentConf.interceptors.error.concat(reqConf.handlers.error || [])
+            error: [].concat(_toConsumableArray(currentConf.interceptors.error), _toConsumableArray(handlers.error))
           },
 
           processHandlers: {
@@ -552,7 +556,7 @@ var methods = {
         var _this = this;
 
         var curReqConf = this._createReqObj(userReqConf);
-        console.log(curReqConf);
+
         curReqConf = _helpers.pipe.apply(null, curReqConf.handlers.request)(curReqConf);
 
         var xhr = new XMLHttpRequest();
@@ -607,6 +611,16 @@ var methods = {
         copy._resources = res._resources;
 
         return copy;
+      }
+    }, {
+      key: '_noopHandlers',
+      get: function get() {
+        return {
+          request: [],
+          response: [],
+          error: [],
+          success: []
+        };
       }
     }, {
       key: '_proxyHandler',

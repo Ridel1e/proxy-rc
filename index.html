@@ -12,15 +12,11 @@
     const rcBuilder = createRCBuilder();
 
     const rc = rcBuilder
-      .baseUrl('https://httpbin.org/pos')
-      .on('request', (req) => { req.headers.auth = '1234'; console.log(req); return req; })
-      .on('response', (res) => { console.log(res); return res; })
-      .on('success',  (res) => { console.log('success'); return res; })
+      .baseUrl('https://api.github.com')
+      .on('success', (res) => res.data)
       .build();
 
-      rc.post({ name: 'Ruslan' }, {
-        handlers: { error: (res) => {console.log(res); return res;}}
-      });
+    rc.repos('Amareis/another-rest-client').get().then((res) => console.log(res));
   </script>
 </body>
 </html>

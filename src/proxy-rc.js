@@ -88,23 +88,34 @@ const  createRC = (conf) => {
      * @param {*} reqConf 
      */
     _createReqObj (reqConf) {
+      const handlers = 
+        Object.assign({}, Resource._noopHandlers, reqConf.handlers);
+
       return {
         headers: Object.assign({}, {
           'Content-Type': currentConf.contentType
         }, reqConf.headers),
         
         handlers: {
-          request: currentConf.interceptors.request
-            .concat(reqConf.handlers.request || []),
+          request: [
+            ...currentConf.interceptors.request,
+            ...handlers.request
+          ],
 
-          response: currentConf.interceptors.response
-            .concat(reqConf.handlers.response || []),
+          response: [
+            ...currentConf.interceptors.response,
+            ...handlers.response
+          ],
 
-          success: currentConf.interceptors.success
-            .concat(reqConf.handlers.success || []),
+          success: [
+            ...currentConf.interceptors.success,
+            ...handlers.success
+          ],
 
-          error: currentConf.interceptors.error
-            .concat(reqConf.handlers.error || [])
+          error: [
+            ...currentConf.interceptors.error,
+            ...handlers.error
+          ]
         },
 
         processHandlers: {
@@ -134,7 +145,7 @@ const  createRC = (conf) => {
 
     _request (userReqConf) {
       let curReqConf = this._createReqObj(userReqConf);
-      console.log(curReqConf)
+
       curReqConf = pipe.apply(null, curReqConf.handlers.request)(curReqConf);
 
       const xhr = new XMLHttpRequest();
@@ -182,6 +193,15 @@ const  createRC = (conf) => {
         }, '');
 
       return encodedParams.slice(0, encodedParams.length - 1);
+    }
+
+    static get _noopHandlers () {
+      return {
+        request: [],
+        response: [],
+        error: [],
+        success: []
+      }
     }
 
     static get _proxyHandler () {
