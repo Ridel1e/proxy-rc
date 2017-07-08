@@ -16,7 +16,11 @@
       .on('success', (res) => res.data)
       .build();
 
-    rc.repos('Amareis/another-rest-client').get().then((res) => console.log(res));
+    rc
+      .repos('Amareis/another-rest-client')
+      .releases('latest')
+      .get()
+      .then((res) => console.log(res));
   </script>
 </body>
 </html>
