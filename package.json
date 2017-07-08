@@ -1,8 +1,8 @@
 {
   "name": "proxy-rc",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "simple rest client based on proxy ",
-  "main": "index.js",
+  "main": "proxy-rest-client.js",
   "directories": {
     "example": "example",
     "test": "tests"
