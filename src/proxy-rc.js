@@ -111,19 +111,29 @@ const  createRC = (conf) => {
       }
     }
 
+    _generateUrl (params) {
+      const paramTrailing = params ? '?' : '';
+
+      return this.url() + currentConf.trailing + 
+             paramTrailing + this._encodeParams(params);
+    }
+
+    _isRequestSuccessful (status) {
+      return status === 200 || 
+             status === 201 || 
+             status === 204 || 
+             status === 304;
+    } 
+
     _request (userReqConf) {
       let curReqConf = this._createReqObj(userReqConf);
-      curReqConf = 
-        pipe.apply(null, curReqConf.handlers.request)(curReqConf);
-      
-      /* generateUrl func */
-      const generateUrl = () => this.url() +
-                                currentConf.trailing + '?' +
-                                this._encodeParams(curReqConf.params);
+
+      curReqConf = pipe.apply(null, curReqConf.handlers.request)(curReqConf);
 
       const xhr = new XMLHttpRequest();
-      xhr.open(curReqConf.method, generateUrl(), true);
-      /* headers */
+
+      xhr.open(curReqConf.method, this._generateUrl(curReqConf.params), true);
+
       Object.keys(curReqConf.headers).forEach((header) => 
           xhr.setRequestHeader(header, curReqConf.headers[header]));
 
@@ -138,14 +148,13 @@ const  createRC = (conf) => {
       return new Promise((resolve, reject) => {
         xhr.onreadystatechange = () => {
           if(xhr.readyState == 4) {
-            const res = pipe
-              .apply(null, curReqConf.handlers.response)({
-                status: xhr.status,
-                statusText: xhr.statusText,
-                data: xhr.responseText ? mimes.decode(xhr.responseText) : null
-              })
+            const res = pipe.apply(null, curReqConf.handlers.response)({
+              status: xhr.status,
+              statusText: xhr.statusText,
+              data: xhr.responseText ? mimes.decode(xhr.responseText) : null
+            });
 
-            if(res.status == 200 || res.status == 201 || res.status === 204 || res.status === 304) {
+            if(this._isRequestSuccessful(res.status)) {
               resolve(pipe.apply(null, curReqConf.handlers.success)(res))
             }
 

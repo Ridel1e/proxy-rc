@@ -534,21 +534,30 @@ var methods = {
         };
       }
     }, {
+      key: '_generateUrl',
+      value: function _generateUrl(params) {
+        var paramTrailing = params ? '?' : '';
+
+        return this.url() + currentConf.trailing + paramTrailing + this._encodeParams(params);
+      }
+    }, {
+      key: '_isRequestSuccessful',
+      value: function _isRequestSuccessful(status) {
+        return status === 200 || status === 201 || status === 204 || status === 304;
+      }
+    }, {
       key: '_request',
       value: function _request(userReqConf) {
         var _this = this;
 
         var curReqConf = this._createReqObj(userReqConf);
+
         curReqConf = _helpers.pipe.apply(null, curReqConf.handlers.request)(curReqConf);
 
-        /* generateUrl func */
-        var generateUrl = function generateUrl() {
-          return _this.url() + currentConf.trailing + '?' + _this._encodeParams(curReqConf.params);
-        };
-
         var xhr = new XMLHttpRequest();
-        xhr.open(curReqConf.method, generateUrl(), true);
-        /* headers */
+
+        xhr.open(curReqConf.method, this._generateUrl(curReqConf.params), true);
+
         Object.keys(curReqConf.headers).forEach(function (header) {
           return xhr.setRequestHeader(header, curReqConf.headers[header]);
         });
@@ -570,7 +579,7 @@ var methods = {
                 data: xhr.responseText ? mimes.decode(xhr.responseText) : null
               });
 
-              if (res.status == 200 || res.status == 201 || res.status === 204 || res.status === 304) {
+              if (_this._isRequestSuccessful(res.status)) {
                 resolve(_helpers.pipe.apply(null, curReqConf.handlers.success)(res));
               }
 
