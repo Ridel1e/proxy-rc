@@ -87,7 +87,7 @@ const  createRC = (conf) => {
      * 
      * @param {*} reqConf 
      */
-    _createReqObj (reqConf) {
+    _createReqConf (reqConf) {
       const handlers = 
         Object.assign({}, Resource._noopHandlers, reqConf.handlers);
 
@@ -144,43 +144,55 @@ const  createRC = (conf) => {
     } 
 
     _request (userReqConf) {
-      let curReqConf = this._createReqObj(userReqConf);
+      let currentReqConf = this._createReqConf(userReqConf);
+      const handleRequest = pipe(...curReqConf.handlers.request);
 
-      curReqConf = pipe.apply(null, curReqConf.handlers.request)(curReqConf);
+      currentReqConf = handleRequest(curReqConf);
 
-      const xhr = new XMLHttpRequest();
+      const xhr = new XMLHttpRequest(); 
+      xhr.open(
+        currentReqConf.method, 
+        this._generateUrl(currentReqConf.params), 
+        true
+      );
 
-      xhr.open(curReqConf.method, this._generateUrl(curReqConf.params), true);
+      /* sets all nesesarry headers for xhr obj */
+      Object
+        .keys(currentReqConf.headers)
+        .forEach((header) => 
+          xhr.setRequestHeader(header, currentReqConf.headers[header]));
 
-      Object.keys(curReqConf.headers).forEach((header) => 
-          xhr.setRequestHeader(header, curReqConf.headers[header]));
-
-      const mimes = currentConf.mimes[curReqConf.headers['Content-Type']];
+      const mimes = currentConf.mimes[currentReqConf.headers['Content-Type']];
       
       if(!mimes) {
         throw new Error('mimes for this content-type doesn\'t exists')
       }
 
-      xhr.send(mimes.encode(curReqConf.data));
+      xhr.send(mimes.encode(currentReqConf.data));
 
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve, reject) =>
         xhr.onreadystatechange = () => {
-          if(xhr.readyState == 4) {
-            const res = pipe.apply(null, curReqConf.handlers.response)({
+          if (xhr.readyState == 4) {
+            const handlerResponse = pipe(...currentReqConf.handlers.response);
+            const handlerSuccess = pipe(...currentReqConf.handlers.success);
+            const handleError = pipe(...currentReqConf.handlers.error);
+
+            const res = handlerResponse({
               status: xhr.status,
               statusText: xhr.statusText,
-              data: xhr.responseText ? mimes.decode(xhr.responseText) : null
+              data: xhr.responseText ? mimes.decode(xhr.responseText) : null,
+              config: currentReqConf
             });
-            
+
             if(this._isRequestSuccessful(res.status)) {
-              resolve(pipe.apply(null, curReqConf.handlers.success)(res))
-            } 
+              resolve(handlerSuccess(res));
+            }
             else {
-              reject(pipe.apply(null, curReqConf.handlers.error)(res));
+              reject(handleError(res));
             }
           }
         }
-      })
+      )
     }
 
     _encodeParams (params = {}) {
