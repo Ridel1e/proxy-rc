@@ -20,6 +20,9 @@
       .repos('Amareis/another-rest-client')
       .releases('latest')
       .get()
+      // .get(null, {
+      //   onUploadProgress : (event) => console.log('test') 
+      // })
       .then((res) => console.log(res));
   </script>
 </body>

@@ -679,10 +679,8 @@ var createRC = function createRC(conf) {
 
     }, {
       key: '_encodeParams',
-      value: function _encodeParams() {
-        var params = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-
-        var encodedParams = Object.keys(params).reduce(function (acc, param) {
+      value: function _encodeParams(params) {
+        var encodedParams = Object.keys(params || {}).reduce(function (acc, param) {
           return acc + encodeURIComponent(param) + '=' + encodeURIComponent(params[param]) + '&';
         }, '');
 

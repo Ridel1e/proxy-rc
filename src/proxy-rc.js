@@ -234,9 +234,9 @@ const  createRC = (conf) => {
      * 
      * @param {*} params 
      */
-    _encodeParams (params = {}) {
+    _encodeParams (params) {
       const encodedParams = Object
-        .keys(params)
+        .keys(params || {})
         .reduce((acc, param) => {
           return acc + encodeURIComponent(param) + 
                  '=' + encodeURIComponent(params[param]) + 
