@@ -160,6 +160,8 @@ var tryCatch = function tryCatch(fn, errVal) {
   };
 };
 
+var noop = function noop() {};
+
 exports.isNull = isNull;
 exports.isNan = isNan;
 exports.isUndefined = isUndefined;
@@ -171,6 +173,7 @@ exports.isSymbol = isSymbol;
 exports.isEmpty = isEmpty;
 exports.pipe = pipe;
 exports.tryCatch = tryCatch;
+exports.noop = noop;
 
 /***/ }),
 /* 1 */
@@ -570,26 +573,13 @@ var createRC = function createRC(conf) {
     }, {
       key: '_createReqConf',
       value: function _createReqConf(reqConf) {
-        var handlers = Object.assign({}, Resource._noopHandlers, reqConf.handlers);
-
         return {
           headers: Object.assign({}, {
             'Content-Type': currentConf.contentType
           }, reqConf.headers),
 
-          handlers: {
-            request: [].concat(_toConsumableArray(currentConf.interceptors.request), _toConsumableArray(handlers.request)),
-
-            response: [].concat(_toConsumableArray(currentConf.interceptors.response), _toConsumableArray(handlers.response)),
-
-            success: [].concat(_toConsumableArray(currentConf.interceptors.success), _toConsumableArray(handlers.success)),
-
-            error: [].concat(_toConsumableArray(currentConf.interceptors.error), _toConsumableArray(handlers.error))
-          },
-
-          processHandlers: {
-            /* in progress */
-          },
+          onUploadProgress: reqConf.onUploadProgress || _helpers.noop,
+          onDownloadProgress: reqConf.onDownloadProgress || _helpers.noop,
 
           method: reqConf.method,
           url: this.url(),
@@ -632,13 +622,16 @@ var createRC = function createRC(conf) {
       value: function _request(userReqConf) {
         var _this = this;
 
-        var currentReqConf = this._createReqConf(userReqConf);
-        var handleRequest = _helpers.pipe.apply(undefined, _toConsumableArray(currentReqConf.handlers.request));
+        var handleRequest = _helpers.pipe.apply(undefined, _toConsumableArray(currentConf.interceptors.request));
+        var createThenHandleReqConf = (0, _helpers.pipe)(this._createReqConf.bind(this), handleRequest);
 
-        currentReqConf = handleRequest(currentReqConf);
+        var currentReqConf = createThenHandleReqConf(userReqConf);
 
         var xhr = new XMLHttpRequest();
         xhr.open(currentReqConf.method, this._generateUrl(currentReqConf.params), true);
+
+        xhr.upload.onprogress = currentConf.onUploadProgress;
+        xhr.onprogress = currentConf.onDownloadProgress;
 
         /* sets all nesesarry headers for xhr obj */
         Object.keys(currentReqConf.headers).forEach(function (header) {
@@ -653,9 +646,9 @@ var createRC = function createRC(conf) {
         return new Promise(function (resolve, reject) {
           return xhr.onreadystatechange = function () {
             if (xhr.readyState == 4) {
-              var handlerResponse = _helpers.pipe.apply(undefined, _toConsumableArray(currentReqConf.handlers.response));
-              var handlerSuccess = _helpers.pipe.apply(undefined, _toConsumableArray(currentReqConf.handlers.success));
-              var handleError = _helpers.pipe.apply(undefined, _toConsumableArray(currentReqConf.handlers.error));
+              var handlerResponse = _helpers.pipe.apply(undefined, _toConsumableArray(currentConf.interceptors.response));
+              var handlerSuccess = _helpers.pipe.apply(undefined, _toConsumableArray(currentConf.interceptors.success));
+              var handleError = _helpers.pipe.apply(undefined, _toConsumableArray(currentConf.interceptors.error));
 
               var getResCntType = (0, _helpers.pipe)(xhr.getResponseHeader.bind(xhr, 'Content-Type'), getContentTypeWithoutCharset);
 

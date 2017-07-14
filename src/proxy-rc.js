@@ -1,4 +1,4 @@
-import {pipe, tryCatch} from './helpers';
+import {pipe, tryCatch, noop} from './helpers';
 /*
  * HTTP method constants. 
  */
@@ -126,39 +126,13 @@ const  createRC = (conf) => {
      * @param {*} reqConf 
      */
     _createReqConf (reqConf) {
-      const handlers = 
-        Object.assign({}, Resource._noopHandlers, reqConf.handlers);
-
       return {
         headers: Object.assign({}, {
           'Content-Type': currentConf.contentType
         }, reqConf.headers),
         
-        handlers: {
-          request: [
-            ...currentConf.interceptors.request,
-            ...handlers.request
-          ],
-
-          response: [
-            ...currentConf.interceptors.response,
-            ...handlers.response
-          ],
-
-          success: [
-            ...currentConf.interceptors.success,
-            ...handlers.success
-          ],
-
-          error: [
-            ...currentConf.interceptors.error,
-            ...handlers.error
-          ]
-        },
-
-        processHandlers: {
-          /* in progress */
-        },
+        onUploadProgress: reqConf.onUploadProgress || noop,
+        onDownloadProgress: reqConf.onDownloadProgress || noop,
 
         method: reqConf.method,
         url: this.url(),
@@ -194,10 +168,13 @@ const  createRC = (conf) => {
      * @param {*} userReqConf 
      */
     _request (userReqConf) {
-      let currentReqConf = this._createReqConf(userReqConf);
-      const handleRequest = pipe(...currentReqConf.handlers.request);
-    
-      currentReqConf = handleRequest(currentReqConf);
+      const handleRequest = pipe(...currentConf.interceptors.request);
+      const createThenHandleReqConf = pipe(
+        this._createReqConf.bind(this),
+        handleRequest
+      );
+
+      const currentReqConf = createThenHandleReqConf(userReqConf);
 
       const xhr = new XMLHttpRequest(); 
       xhr.open(
@@ -205,6 +182,9 @@ const  createRC = (conf) => {
         this._generateUrl(currentReqConf.params), 
         true
       );
+
+      xhr.upload.onprogress = currentConf.onUploadProgress;
+      xhr.onprogress = currentConf.onDownloadProgress;
 
       /* sets all nesesarry headers for xhr obj */
       Object
@@ -220,9 +200,9 @@ const  createRC = (conf) => {
       return new Promise((resolve, reject) =>
         xhr.onreadystatechange = () => {
           if (xhr.readyState == 4) {
-            const handlerResponse = pipe(...currentReqConf.handlers.response);
-            const handlerSuccess = pipe(...currentReqConf.handlers.success);
-            const handleError = pipe(...currentReqConf.handlers.error);
+            const handlerResponse = pipe(...currentConf.interceptors.response);
+            const handlerSuccess = pipe(...currentConf.interceptors.success);
+            const handleError = pipe(...currentConf.interceptors.error);
             
             const getResCntType = pipe(
               xhr.getResponseHeader.bind(xhr, 'Content-Type'),

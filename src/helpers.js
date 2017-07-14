@@ -37,6 +37,8 @@ const tryCatch = (fn, errVal) => (...args) => {
   }
 } 
 
+const noop = () => {};
+
 export {
   isNull,
   isNan,
@@ -48,5 +50,6 @@ export {
   isSymbol,
   isEmpty,
   pipe,
-  tryCatch
+  tryCatch,
+  noop
 }
