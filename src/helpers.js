@@ -28,6 +28,15 @@ const isEmpty = (val) => {
   return val === '' || isUndefined(val) || isNan(val) || isNull(val);
 }
 
+const tryCatch = (fn, errVal) => (...args) => {
+  try {
+    return fn(...args);
+  }
+  catch (err) {
+    return errVal || err;
+  }
+} 
+
 export {
   isNull,
   isNan,
@@ -38,5 +47,6 @@ export {
   isString,
   isSymbol,
   isEmpty,
-  pipe
+  pipe,
+  tryCatch
 }

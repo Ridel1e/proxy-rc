@@ -1,18 +1,30 @@
-import xr from 'xr';
-import {pipe} from './helpers';
+import {pipe, tryCatch} from './helpers';
 /*
  * HTTP method constants. 
  */
 const methods = {
-  DELETE: xr.Methods.DELETE,
-  GET: xr.Methods.GET,
-  PATCH: xr.Methods.PATCH,
-  POST: xr.Methods.POST,
-  PUT: xr.Methods.PUT
+  DELETE: 'DELETE',
+  GET: 'GET',
+  PATCH: 'PATCH',
+  POST: 'POST',
+  PUT: 'PUT'
 }
 
+const encodeNoop = (val) => {
+  console.warn('encode fn for requested content-type doen\'t exists');
+  return val;
+};
+
+const decodeNoop = (val) => {
+  console.warn('decode fn for requested content-type doen\'t exists');
+  return val;
+};
+
+const getContentTypeWithoutCharset = (hdr) => hdr.split(';')[0];
+
 /**
- * 
+ * Factory Function. Create new Resource object 
+ * @func createRC
  * @param {*} conf 
  */
 const  createRC = (conf) => {
@@ -20,6 +32,12 @@ const  createRC = (conf) => {
 
   class Resource {
 
+    /**
+     * Constructor
+     * @param {*} parent 
+     * @param {*} name 
+     * @param {*} id 
+     */
     constructor (
       parent = null,
       name = '',
@@ -33,36 +51,64 @@ const  createRC = (conf) => {
       return new Proxy(this, Resource._proxyHandler)
     }
 
+    /**
+     * 
+     * @param {*} conf 
+     */
     delete (conf = {}) {
       return this._request(
         Object.assign({}, conf, { method: methods.DELETE })  
       );
     }
 
+    /**
+     * 
+     * @param {*} params 
+     * @param {*} conf 
+     */
     get (params, conf = {}) {
       return this._request(
         Object.assign({}, conf, { method: methods.GET, params })
       );
     }
 
+    /**
+     * 
+     * @param {*} data 
+     * @param {*} conf 
+     */
     patch (data, conf = {}) {
       return this._request(
         Object.assign({}, conf, { method: methods.PATCH, data })
       );
     }
 
+    /**
+     * 
+     * @param {*} data 
+     * @param {*} conf 
+     */
     post (data, conf = {}) {
       return this._request(
         Object.assign({}, conf, { method: methods.POST, data })
       );
     }
 
+    /**
+     * 
+     * @param {*} data 
+     * @param {*} conf 
+     */
     put (data, conf ={}) {
       return this._request(
         Object.assign({}, conf, { method: methods.PUT, data })
       );
     }
 
+    /**
+     * 
+     * @param {*} suffix 
+     */
     url (suffix = true) {
       let url = this._parent ?
                 this._parent.url(false) :
@@ -73,14 +119,6 @@ const  createRC = (conf) => {
       if (suffix && currentConf.suffix) { url += `.${currentConf.suffix}`; }
 
       return url;
-    }
-
-    _mapResObj (res) {
-      return {
-        data: JSON.parse(res.response) || null,
-        status: res.status,
-        statusText: res.xhr.statusText
-      }
     }
 
     /**
@@ -129,6 +167,10 @@ const  createRC = (conf) => {
       }
     }
 
+    /**
+     * 
+     * @param {*} params 
+     */
     _generateUrl (params) {
       const paramTrailing = params ? '?' : '';
 
@@ -136,6 +178,10 @@ const  createRC = (conf) => {
              paramTrailing + this._encodeParams(params);
     }
 
+    /**
+     * 
+     * @param {*} status 
+     */
     _isRequestSuccessful (status) {
       return status === 200 || 
              status === 201 || 
@@ -143,11 +189,15 @@ const  createRC = (conf) => {
              status === 304;
     } 
 
+    /**
+     * 
+     * @param {*} userReqConf 
+     */
     _request (userReqConf) {
       let currentReqConf = this._createReqConf(userReqConf);
-      const handleRequest = pipe(...curReqConf.handlers.request);
-
-      currentReqConf = handleRequest(curReqConf);
+      const handleRequest = pipe(...currentReqConf.handlers.request);
+    
+      currentReqConf = handleRequest(currentReqConf);
 
       const xhr = new XMLHttpRequest(); 
       xhr.open(
@@ -162,13 +212,10 @@ const  createRC = (conf) => {
         .forEach((header) => 
           xhr.setRequestHeader(header, currentReqConf.headers[header]));
 
-      const mimes = currentConf.mimes[currentReqConf.headers['Content-Type']];
-      
-      if(!mimes) {
-        throw new Error('mimes for this content-type doesn\'t exists')
-      }
+      const mime = currentConf.mimes[currentReqConf.headers['Content-Type']] || {};
+      const encodeOrRaw = tryCatch(mime.encode || encodeNoop, currentReqConf.data);
 
-      xhr.send(mimes.encode(currentReqConf.data));
+      xhr.send(encodeOrRaw(currentReqConf.data));
 
       return new Promise((resolve, reject) =>
         xhr.onreadystatechange = () => {
@@ -176,11 +223,19 @@ const  createRC = (conf) => {
             const handlerResponse = pipe(...currentReqConf.handlers.response);
             const handlerSuccess = pipe(...currentReqConf.handlers.success);
             const handleError = pipe(...currentReqConf.handlers.error);
+            
+            const getResCntType = pipe(
+              xhr.getResponseHeader.bind(xhr, 'Content-Type'),
+              getContentTypeWithoutCharset
+            );
 
+            const mime = currentConf.mimes[getResCntType()] || {};
+            const decodeOrRaw = tryCatch(mime.decode || decodeNoop, xhr.responseText);
+            
             const res = handlerResponse({
               status: xhr.status,
               statusText: xhr.statusText,
-              data: xhr.responseText ? mimes.decode(xhr.responseText) : null,
+              data: decodeOrRaw(xhr.responseText),
               config: currentReqConf
             });
 
@@ -195,6 +250,10 @@ const  createRC = (conf) => {
       )
     }
 
+    /**
+     * 
+     * @param {*} params 
+     */
     _encodeParams (params = {}) {
       const encodedParams = Object
         .keys(params)
@@ -207,6 +266,9 @@ const  createRC = (conf) => {
       return encodedParams.slice(0, encodedParams.length - 1);
     }
 
+    /**
+     * 
+     */
     static get _noopHandlers () {
       return {
         request: [],
@@ -216,6 +278,9 @@ const  createRC = (conf) => {
       }
     }
 
+    /**
+     * 
+     */
     static get _proxyHandler () {
       return {
         get: (trgt, prop) => {
@@ -234,6 +299,11 @@ const  createRC = (conf) => {
       }
     }
 
+   /**
+    * 
+    * @param {*} res 
+    * @param {*} id 
+    */
     static clone (res, id) {
       const copy = new Resource(
         res._parent,

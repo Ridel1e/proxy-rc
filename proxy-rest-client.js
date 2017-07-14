@@ -150,6 +150,16 @@ var isEmpty = function isEmpty(val) {
   return val === '' || isUndefined(val) || isNan(val) || isNull(val);
 };
 
+var tryCatch = function tryCatch(fn, errVal) {
+  return function () {
+    try {
+      return fn.apply(undefined, arguments);
+    } catch (err) {
+      return errVal || err;
+    }
+  };
+};
+
 exports.isNull = isNull;
 exports.isNan = isNan;
 exports.isUndefined = isUndefined;
@@ -160,6 +170,7 @@ exports.isString = isString;
 exports.isSymbol = isSymbol;
 exports.isEmpty = isEmpty;
 exports.pipe = pipe;
+exports.tryCatch = tryCatch;
 
 /***/ }),
 /* 1 */
@@ -394,13 +405,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-var _xr = __webpack_require__(3);
-
-var _xr2 = _interopRequireDefault(_xr);
-
 var _helpers = __webpack_require__(0);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
@@ -410,20 +415,43 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
  * HTTP method constants. 
  */
 var methods = {
-  DELETE: _xr2.default.Methods.DELETE,
-  GET: _xr2.default.Methods.GET,
-  PATCH: _xr2.default.Methods.PATCH,
-  POST: _xr2.default.Methods.POST,
-  PUT: _xr2.default.Methods.PUT
+  DELETE: 'DELETE',
+  GET: 'GET',
+  PATCH: 'PATCH',
+  POST: 'POST',
+  PUT: 'PUT'
+};
 
-  /**
-   * 
-   * @param {*} conf 
-   */
-};var createRC = function createRC(conf) {
+var encodeNoop = function encodeNoop(val) {
+  console.warn('encode fn for requested content-type doen\'t exists');
+  return val;
+};
+
+var decodeNoop = function decodeNoop(val) {
+  console.warn('decode fn for requested content-type doen\'t exists');
+  return val;
+};
+
+var getContentTypeWithoutCharset = function getContentTypeWithoutCharset(hdr) {
+  return hdr.split(';')[0];
+};
+
+/**
+ * Factory Function. Create new Resource object 
+ * @func createRC
+ * @param {*} conf 
+ */
+var createRC = function createRC(conf) {
   var currentConf = conf;
 
   var Resource = function () {
+
+    /**
+     * Constructor
+     * @param {*} parent 
+     * @param {*} name 
+     * @param {*} id 
+     */
     function Resource() {
       var parent = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
       var name = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
@@ -439,6 +467,12 @@ var methods = {
       return new Proxy(this, Resource._proxyHandler);
     }
 
+    /**
+     * 
+     * @param {*} conf 
+     */
+
+
     _createClass(Resource, [{
       key: 'delete',
       value: function _delete() {
@@ -446,6 +480,13 @@ var methods = {
 
         return this._request(Object.assign({}, conf, { method: methods.DELETE }));
       }
+
+      /**
+       * 
+       * @param {*} params 
+       * @param {*} conf 
+       */
+
     }, {
       key: 'get',
       value: function get(params) {
@@ -453,6 +494,13 @@ var methods = {
 
         return this._request(Object.assign({}, conf, { method: methods.GET, params: params }));
       }
+
+      /**
+       * 
+       * @param {*} data 
+       * @param {*} conf 
+       */
+
     }, {
       key: 'patch',
       value: function patch(data) {
@@ -460,6 +508,13 @@ var methods = {
 
         return this._request(Object.assign({}, conf, { method: methods.PATCH, data: data }));
       }
+
+      /**
+       * 
+       * @param {*} data 
+       * @param {*} conf 
+       */
+
     }, {
       key: 'post',
       value: function post(data) {
@@ -467,6 +522,13 @@ var methods = {
 
         return this._request(Object.assign({}, conf, { method: methods.POST, data: data }));
       }
+
+      /**
+       * 
+       * @param {*} data 
+       * @param {*} conf 
+       */
+
     }, {
       key: 'put',
       value: function put(data) {
@@ -474,6 +536,12 @@ var methods = {
 
         return this._request(Object.assign({}, conf, { method: methods.PUT, data: data }));
       }
+
+      /**
+       * 
+       * @param {*} suffix 
+       */
+
     }, {
       key: 'url',
       value: function url() {
@@ -493,15 +561,6 @@ var methods = {
 
         return url;
       }
-    }, {
-      key: '_mapResObj',
-      value: function _mapResObj(res) {
-        return {
-          data: JSON.parse(res.response) || null,
-          status: res.status,
-          statusText: res.xhr.statusText
-        };
-      }
 
       /**
        * 
@@ -509,8 +568,8 @@ var methods = {
        */
 
     }, {
-      key: '_createReqObj',
-      value: function _createReqObj(reqConf) {
+      key: '_createReqConf',
+      value: function _createReqConf(reqConf) {
         var handlers = Object.assign({}, Resource._noopHandlers, reqConf.handlers);
 
         return {
@@ -538,6 +597,12 @@ var methods = {
           data: reqConf.data
         };
       }
+
+      /**
+       * 
+       * @param {*} params 
+       */
+
     }, {
       key: '_generateUrl',
       value: function _generateUrl(params) {
@@ -545,54 +610,80 @@ var methods = {
 
         return this.url() + currentConf.trailing + paramTrailing + this._encodeParams(params);
       }
+
+      /**
+       * 
+       * @param {*} status 
+       */
+
     }, {
       key: '_isRequestSuccessful',
       value: function _isRequestSuccessful(status) {
         return status === 200 || status === 201 || status === 204 || status === 304;
       }
+
+      /**
+       * 
+       * @param {*} userReqConf 
+       */
+
     }, {
       key: '_request',
       value: function _request(userReqConf) {
         var _this = this;
 
-        var curReqConf = this._createReqObj(userReqConf);
+        var currentReqConf = this._createReqConf(userReqConf);
+        var handleRequest = _helpers.pipe.apply(undefined, _toConsumableArray(currentReqConf.handlers.request));
 
-        curReqConf = _helpers.pipe.apply(null, curReqConf.handlers.request)(curReqConf);
+        currentReqConf = handleRequest(currentReqConf);
 
         var xhr = new XMLHttpRequest();
+        xhr.open(currentReqConf.method, this._generateUrl(currentReqConf.params), true);
 
-        xhr.open(curReqConf.method, this._generateUrl(curReqConf.params), true);
-
-        Object.keys(curReqConf.headers).forEach(function (header) {
-          return xhr.setRequestHeader(header, curReqConf.headers[header]);
+        /* sets all nesesarry headers for xhr obj */
+        Object.keys(currentReqConf.headers).forEach(function (header) {
+          return xhr.setRequestHeader(header, currentReqConf.headers[header]);
         });
 
-        var mimes = currentConf.mimes[curReqConf.headers['Content-Type']];
+        var mime = currentConf.mimes[currentReqConf.headers['Content-Type']] || {};
+        var encodeOrRaw = (0, _helpers.tryCatch)(mime.encode || encodeNoop, currentReqConf.data);
 
-        if (!mimes) {
-          throw new Error('mimes for this content-type doesn\'t exists');
-        }
-
-        xhr.send(mimes.encode(curReqConf.data));
+        xhr.send(encodeOrRaw(currentReqConf.data));
 
         return new Promise(function (resolve, reject) {
-          xhr.onreadystatechange = function () {
+          return xhr.onreadystatechange = function () {
             if (xhr.readyState == 4) {
-              var res = _helpers.pipe.apply(null, curReqConf.handlers.response)({
+              var handlerResponse = _helpers.pipe.apply(undefined, _toConsumableArray(currentReqConf.handlers.response));
+              var handlerSuccess = _helpers.pipe.apply(undefined, _toConsumableArray(currentReqConf.handlers.success));
+              var handleError = _helpers.pipe.apply(undefined, _toConsumableArray(currentReqConf.handlers.error));
+
+              var getResCntType = (0, _helpers.pipe)(xhr.getResponseHeader.bind(xhr, 'Content-Type'), getContentTypeWithoutCharset);
+
+              var _mime = currentConf.mimes[getResCntType()] || {};
+              var decodeOrRaw = (0, _helpers.tryCatch)(_mime.decode || decodeNoop, xhr.responseText);
+
+              var res = handlerResponse({
                 status: xhr.status,
                 statusText: xhr.statusText,
-                data: xhr.responseText ? mimes.decode(xhr.responseText) : null
+                data: decodeOrRaw(xhr.responseText),
+                config: currentReqConf
               });
 
               if (_this._isRequestSuccessful(res.status)) {
-                resolve(_helpers.pipe.apply(null, curReqConf.handlers.success)(res));
+                resolve(handlerSuccess(res));
               } else {
-                reject(_helpers.pipe.apply(null, curReqConf.handlers.error)(res));
+                reject(handleError(res));
               }
             }
           };
         });
       }
+
+      /**
+       * 
+       * @param {*} params 
+       */
+
     }, {
       key: '_encodeParams',
       value: function _encodeParams() {
@@ -604,8 +695,20 @@ var methods = {
 
         return encodedParams.slice(0, encodedParams.length - 1);
       }
+
+      /**
+       * 
+       */
+
     }], [{
       key: 'clone',
+
+
+      /**
+       * 
+       * @param {*} res 
+       * @param {*} id 
+       */
       value: function clone(res, id) {
         var copy = new Resource(res._parent, res._name, id);
         copy._resources = res._resources;
@@ -622,6 +725,11 @@ var methods = {
           success: []
         };
       }
+
+      /**
+       * 
+       */
+
     }, {
       key: '_proxyHandler',
       get: function get() {
@@ -664,12 +772,6 @@ var methods = {
 };
 
 exports.createRC = createRC;
-
-/***/ }),
-/* 3 */
-/***/ (function(module, exports, __webpack_require__) {
-
-!function(e,t){ true?module.exports=t():"function"==typeof define&&define.amd?define([],t):"object"==typeof exports?exports["xr.js"]=t():e["xr.js"]=t()}(this,function(){return function(e){function t(r){if(n[r])return n[r].exports;var o=n[r]={exports:{},id:r,loaded:!1};return e[r].call(o.exports,o,o.exports,t),o.loaded=!0,o.exports}var n={};return t.m=e,t.c=n,t.p="/",t(0)}([function(e,t,n){e.exports=n(1)},function(e,t,n){"use strict";var r=this&&this.__assign||Object.assign||function(e){for(var t,n=1,r=arguments.length;n<r;n++){t=arguments[n];for(var o in t)Object.prototype.hasOwnProperty.call(t,o)&&(e[o]=t[o])}return e};Object.defineProperty(t,"__esModule",{value:!0});var o=n(2),s=n(5),a={method:s.METHODS.GET,data:void 0,headers:{Accept:"application/json","Content-Type":"application/json"},dump:JSON.stringify,load:JSON.parse,xmlHttpRequest:function(){return new XMLHttpRequest},promise:function(e){return new Promise(e)},withCredentials:!1},u=function(e,t){return{status:e.status,response:e.response,data:t,xhr:e}},i=r({},a),d=function(e){i=r({},i,e)},c=function(e,t){return(e&&e.promise?e.promise:i.promise||a.promise)(t)},p=function(e){return c(e,function(t,n){var d=r({},a,i,e),c=d.xmlHttpRequest();if(d.abort&&e.abort(function(){n(u(c)),c.abort()}),void 0===d.url)throw new Error("No URL defined");c.open(d.method,d.params?d.url.split("?")[0]+"?"+o.encode(d.params):d.url,!0),c.withCredentials=d.withCredentials,c.addEventListener(s.EVENTS.LOAD,function(){if(c.status>=200&&c.status<300){var e;c.responseText&&(e=d.raw===!0?c.responseText:d.load(c.responseText)),t(u(c,e))}else n(u(c))}),c.addEventListener(s.EVENTS.ABORT,function(){return n(u(c))}),c.addEventListener(s.EVENTS.ERROR,function(){return n(u(c))}),c.addEventListener(s.EVENTS.TIMEOUT,function(){return n(u(c))});for(var p in d.headers)({}).hasOwnProperty.call(d.headers,p)&&c.setRequestHeader(p,d.headers[p]);if(d.events)for(var p in d.events)({}).hasOwnProperty.call(d.events,p)&&c.addEventListener(p,d.events[p].bind(null,c),!1);var f="object"!=typeof d.data||d.raw?d.data:d.dump(d.data);void 0!==f?c.send(f):c.send()})};p.configure=d,p.Methods=s.METHODS,p.Events=s.EVENTS,p.get=function(e,t,n){return p(r({url:e,method:s.METHODS.GET,params:t},n))},p.put=function(e,t,n){return p(r({url:e,method:s.METHODS.PUT,data:t},n))},p.post=function(e,t,n){return p(r({url:e,method:s.METHODS.POST,data:t},n))},p.patch=function(e,t,n){return p(r({url:e,method:s.METHODS.PATCH,data:t},n))},p.del=function(e,t){return p(r({url:e,method:s.METHODS.DELETE},t))},p.options=function(e,t){return p(r({url:e,method:s.METHODS.OPTIONS},t))},t.default=p},function(e,t,n){"use strict";t.decode=t.parse=n(3),t.encode=t.stringify=n(4)},function(e,t){"use strict";function n(e,t){return Object.prototype.hasOwnProperty.call(e,t)}e.exports=function(e,t,r,o){t=t||"&",r=r||"=";var s={};if("string"!=typeof e||0===e.length)return s;var a=/\+/g;e=e.split(t);var u=1e3;o&&"number"==typeof o.maxKeys&&(u=o.maxKeys);var i=e.length;u>0&&i>u&&(i=u);for(var d=0;d<i;++d){var c,p,f,l,E=e[d].replace(a,"%20"),T=E.indexOf(r);T>=0?(c=E.substr(0,T),p=E.substr(T+1)):(c=E,p=""),f=decodeURIComponent(c),l=decodeURIComponent(p),n(s,f)?Array.isArray(s[f])?s[f].push(l):s[f]=[s[f],l]:s[f]=l}return s}},function(e,t){"use strict";var n=function(e){switch(typeof e){case"string":return e;case"boolean":return e?"true":"false";case"number":return isFinite(e)?e:"";default:return""}};e.exports=function(e,t,r,o){return t=t||"&",r=r||"=",null===e&&(e=void 0),"object"==typeof e?Object.keys(e).map(function(o){var s=encodeURIComponent(n(o))+r;return Array.isArray(e[o])?e[o].map(function(e){return s+encodeURIComponent(n(e))}).join(t):s+encodeURIComponent(n(e[o]))}).join(t):o?encodeURIComponent(n(o))+r+encodeURIComponent(n(e)):""}},function(e,t){"use strict";Object.defineProperty(t,"__esModule",{value:!0}),t.METHODS={GET:"GET",POST:"POST",PUT:"PUT",DELETE:"DELETE",PATCH:"PATCH",OPTIONS:"OPTIONS",HEAD:"HEAD"},t.EVENTS={READY_STATE_CHANGE:"readystatechange",LOAD_START:"loadstart",PROGRESS:"progress",ABORT:"abort",ERROR:"error",LOAD:"load",TIMEOUT:"timeout",LOAD_END:"loadend"}}])});
 
 /***/ })
 /******/ ]);
