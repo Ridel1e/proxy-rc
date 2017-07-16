@@ -241,7 +241,7 @@ var RCBuilder = function () {
   }, {
     key: 'baseUrl',
     value: function baseUrl(url) {
-      if ((0, _helpers.isEmpty)(url)) {
+      if ((0, _helpers.isUndefined)(url)) {
         return this._conf.baseUrl;
       }
 
@@ -273,7 +273,7 @@ var RCBuilder = function () {
   }, {
     key: 'config',
     value: function config(conf) {
-      if ((0, _helpers.isEmpty)(conf)) {
+      if ((0, _helpers.isUndefined)(conf)) {
         return this._conf;
       }
 
@@ -294,8 +294,8 @@ var RCBuilder = function () {
   }, {
     key: 'contentType',
     value: function contentType(cntType) {
-      if ((0, _helpers.isEmpty)(cntType)) {
-        return this._conf.cntType;
+      if ((0, _helpers.isUndefined)(cntType)) {
+        return this._conf.contentType;
       }
 
       if (!(0, _helpers.isString)(cntType)) {
@@ -315,7 +315,7 @@ var RCBuilder = function () {
   }, {
     key: 'suffix',
     value: function suffix(suf) {
-      if ((0, _helpers.isEmpty)(suf)) {
+      if ((0, _helpers.isUndefined)(suf)) {
         return this._conf.suffix;
       }
 
@@ -336,7 +336,7 @@ var RCBuilder = function () {
   }, {
     key: 'trailing',
     value: function trailing(_trailing) {
-      if (_trailing === undefined) {
+      if ((0, _helpers.isUndefined)(_trailing)) {
         return this._conf.trailing;
       }
 

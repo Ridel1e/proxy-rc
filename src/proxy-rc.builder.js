@@ -1,5 +1,5 @@
 import {
-  isEmpty,
+  isUndefined,
   isObject,
   isString,
   isFunction
@@ -47,7 +47,7 @@ class RCBuilder {
    * @returns {url|RCBuilder} 
    */
   baseUrl (url) {
-    if(isEmpty(url)) { return this._conf.baseUrl; }
+    if(isUndefined(url)) { return this._conf.baseUrl; }
 
     if(!isString(url)) { 
       throw new Error('url must be a string');
@@ -71,7 +71,7 @@ class RCBuilder {
    * @param {*} conf 
    */
   config (conf) {
-    if(isEmpty(conf)) { return this._conf; }
+    if(isUndefined(conf)) { return this._conf; }
 
     if(!isObject(conf)) {
       throw new Error('conf must be an Object');
@@ -87,7 +87,7 @@ class RCBuilder {
    * @param {*} cntType 
    */
   contentType (cntType) {
-    if(isEmpty(cntType)) { return this._conf.cntType; }
+    if(isUndefined(cntType)) { return this._conf.contentType; }
 
     if(!isString(cntType)) {
       throw new Error('contentType must be a String');
@@ -103,7 +103,7 @@ class RCBuilder {
    * @param {*} suf 
    */
   suffix (suf) {
-    if(isEmpty(suf)) { return this._conf.suffix; }
+    if(isUndefined(suf)) { return this._conf.suffix; }
     
     if(!isString(suf)) {
       throw new Error('suffix must be a String');
@@ -119,7 +119,7 @@ class RCBuilder {
    * @param {*} trailing 
    */
   trailing (trailing) {
-    if(trailing === undefined) { return this._conf.trailing; }
+    if(isUndefined(trailing)) { return this._conf.trailing; }
 
     if(!isString(trailing)) {
       throw new Error('trailing must be a String');
