@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+</head>
+<body>
+  <ul id="list">
+
+  </ul>
+  <script src="node_modules/proxy-rc/proxy-rest-client.js"></script>
+  <script>
+    const rcBuilder = createRCBuilder();
+
+    const rc = rcBuilder
+      .baseUrl('https://api.github.com')
+      .on('success', function (res) { return res.data })
+      .build();
+
+    const generateHtmlList = function (users) {
+      return users.reduce(function (acc, user) {
+        return acc + '<li> id: ' + user.id + ' login: ' + user.login + '</li>';
+      }, '');
+    };
+
+    const appendList = function (list) {
+      document.querySelector('#list').innerHTML = list;
+    } 
+
+    rc
+      .users()
+      .get()
+      .then(generateHtmlList)
+      .then(appendList);
+  </script>
+</body>
+</html>
